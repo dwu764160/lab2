@@ -1,0 +1,104 @@
+{
+    "tests": [
+      {
+        "name": "Login/Logout Test",
+        "setup": "",
+        "run": "grep \"Login/Logout test passed\" .gradefile",
+        "input": "",
+        "output": "",
+        "comparison": "included",
+        "timeout": 1,
+        "points": 1
+      },
+      {
+        "name": "Banking Operations Test",
+        "setup": "",
+        "run": "grep \"Banking Operations test passed\" .gradefile",
+        "input": "",
+        "output": "",
+        "comparison": "included",
+        "timeout": 5,
+        "points": 1
+      },
+      {
+        "name": "File Operations Test",
+        "setup": "",
+        "run": "grep \"File Operations test passed\" .gradefile",
+        "input": "",
+        "output": "",
+        "comparison": "included",
+        "timeout": 5,
+        "points": 1
+      },
+      {
+        "name": "Invalid Account Test",
+        "setup": "",
+        "run": "grep \"Invalid Account test passed\" .gradefile",
+        "input": "",
+        "output": "",
+        "comparison": "included",
+        "timeout": 5,
+        "points": 1
+      },
+      {
+        "name": "Insufficient Funds Test",
+        "setup": "",
+        "run": "grep \"Insufficient Funds test passed\" .gradefile",
+        "input": "",
+        "output": "",
+        "comparison": "included",
+        "timeout": 5,
+        "points": 1
+      },
+      {
+        "name": "Invalid File Test",
+        "setup": "",
+        "run": "grep \"Invalid File test passed\" .gradefile",
+        "input": "",
+        "output": "",
+        "comparison": "included",
+        "timeout": 5,
+        "points": 1
+      },
+      {
+        "name": "Multiple Clients Test",
+        "setup": "",
+        "run": "grep \"Multiple Clients test passed\" .gradefile",
+        "input": "",
+        "output": "",
+        "comparison": "included",
+        "timeout": 5,
+        "points": 1
+      },
+      {
+        "name": "Concurrent File Operations Test",
+        "setup": "",
+        "run": "grep \"Concurrent File Operations test passed\" .gradefile",
+        "input": "",
+        "output": "",
+        "comparison": "included",
+        "timeout": 5,
+        "points": 1
+      },
+      {
+        "name": "Clean Shutdown Test",
+        "setup": "",
+        "run": "grep \"Clean Shutdown test passed\" .gradefile",
+        "input": "",
+        "output": "",
+        "comparison": "included",
+        "timeout": 5,
+        "points": 1
+      },
+      {
+        "name": "Cleanup test passed Test",
+        "setup": "",
+        "run": "grep \"Cleanup test passed test passed\" .gradefile",
+        "input": "",
+        "output": "",
+        "comparison": "included",
+        "timeout": 5,
+        "points": 1
+      }
+    ]
+  }

@@ -1,0 +1,14 @@
+# build outputs
+*.o
+
+# log files
+*.log
+
+# storage directory
+storage/
+
+# executables
+client
+fileserver
+finance
+logging

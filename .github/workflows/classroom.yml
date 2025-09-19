@@ -1,0 +1,28 @@
+name: GitHub Classroom Workflow
+
+on:
+  - push
+  - workflow_dispatch
+
+permissions:
+  checks: write
+  actions: read
+  contents: read
+
+jobs:
+  build:
+    name: Autograding
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git clone https://${{secrets.token}}@github.com/CSCE-313-FA25-Kebo/lab-2-solution.git autograding
+          cp autograding/*tests.sh ./
+          cp -r autograding/tests ./tests
+          cp -r autograding/solution ./solution
+          cp autograding/autograding.json .github/classroom/autograding.json
+          cp autograding/Makefile Makefile
+          timeout 300 make test > ./.gradefile
+          timeout 300 make private_test > ./.gradefile_private
+      - uses: education/autograding@v1
