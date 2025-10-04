@@ -39,8 +39,10 @@ int main(int argc, char* argv[]) {
     RequestChannel* channel;
     if (ipc == FIFO) {
         // TODO: Create the RequestChannel using FIFOChannel
+        channel = new FIFOChannel("finance", RequestChannel::SERVER_SIDE);
     } else {
         // TODO: Create the RequestChannel using PipeChannel
+        channel = new PipeChannel(STDIN_FILENO, STDOUT_FILENO);
     }
 
     Account* accounts = new Account[max_accounts];

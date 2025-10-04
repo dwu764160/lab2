@@ -59,7 +59,9 @@ int main() {
     int file_pipe1[2], file_pipe2[2];
     // TODO: Create pipes before fork within the if statement
     if (ipc == PIPE) {
-        if (false) {
+        if (pipe(finance_pipe1) < 0 || pipe(finance_pipe2) < 0 ||
+            pipe(logging_pipe1) < 0 || pipe(logging_pipe2) < 0 ||
+            pipe(file_pipe1) < 0 || pipe(file_pipe2) < 0) {
             perror("Pipe creation failed");
             exit(1);
         }
@@ -74,6 +76,17 @@ int main() {
     if (pid == 0) {  // Child process
         if (ipc == PIPE) {
             // TODO: close unused ends and dup2 the right ones
+            // child: finance reads from finance_pipe1[0] (stdin), writes to finance_pipe2[1] (stdout)
+            dup2(finance_pipe1[0], STDIN_FILENO);
+            dup2(finance_pipe2[1], STDOUT_FILENO);
+            // close all fds (both ends) in child after dup2
+            close(finance_pipe1[0]); close(finance_pipe1[1]);
+            close(finance_pipe2[0]); close(finance_pipe2[1]);
+            // also close logging & file pipes since child doesn't use them
+            close(logging_pipe1[0]); close(logging_pipe1[1]);
+            close(logging_pipe2[0]); close(logging_pipe2[1]);
+            close(file_pipe1[0]); close(file_pipe1[1]);
+            close(file_pipe2[0]); close(file_pipe2[1]);
         }
         
         char* args[] = {(char*)"./finance", (char*)"-p", (char*)"-m", (char*)to_string(max_account).c_str(), nullptr};
@@ -83,6 +96,11 @@ int main() {
         execvp(args[0], args);
         perror("Execvp failed");
         exit(1);
+    } else{// parent
+        if (ipc == PIPE) {
+            close(finance_pipe1[0]); // parent will write to finance_pipe1[1]
+            close(finance_pipe2[1]); // parent will read from finance_pipe2[0]
+        }
     }
 
     // logging server
@@ -99,6 +117,17 @@ int main() {
     if (pid == 0) { // Child process
         if (ipc == PIPE) {
             // TODO: close unused ends and dup2 the right ones
+            // child: logging reads from logging_pipe1[0] (stdin), writes to logging_pipe2[1] (stdout)
+            dup2(logging_pipe1[0], STDIN_FILENO);
+            dup2(logging_pipe2[1], STDOUT_FILENO);
+            // close all fds in child
+            close(logging_pipe1[0]); close(logging_pipe1[1]);
+            close(logging_pipe2[0]); close(logging_pipe2[1]);
+            // close finance & file pipes
+            close(finance_pipe1[0]); close(finance_pipe1[1]);
+            close(finance_pipe2[0]); close(finance_pipe2[1]);
+            close(file_pipe1[0]); close(file_pipe1[1]);
+            close(file_pipe2[0]); close(file_pipe2[1]);
         }
 
         char* args[] = {(char*)"./logging", (char*)"-p", (char*)"-n", (char*)log_file_name.c_str(), nullptr};
@@ -108,6 +137,11 @@ int main() {
         execvp(args[0], args);
         perror("Execvp failed");
         exit(1);
+    } else { // parent
+        if (ipc == PIPE) {
+            close(logging_pipe1[0]); // parent will write to logging_pipe1[1]
+            close(logging_pipe2[1]); // parent will read from logging_pipe2[0]
+        }
     }
 
     // file server
@@ -149,12 +183,27 @@ int main() {
     }
     if (file_pid == 0) {
         if (ipc == PIPE) {
-            // TODO: close unused ends and dup2 the right ones
+            // child: file server reads from file_pipe1[0] (stdin), writes to file_pipe2[1] (stdout)
+            dup2(file_pipe1[0], STDIN_FILENO);
+            dup2(file_pipe2[1], STDOUT_FILENO);
+            // close all fds in child
+            close(file_pipe1[0]); close(file_pipe1[1]);
+            close(file_pipe2[0]); close(file_pipe2[1]);
+            // close finance & logging pipes
+            close(finance_pipe1[0]); close(finance_pipe1[1]);
+            close(finance_pipe2[0]); close(finance_pipe2[1]);
+            close(logging_pipe1[0]); close(logging_pipe1[1]);
+            close(logging_pipe2[0]); close(logging_pipe2[1]);
         }
         
         execvp(file_args[0], file_args);
         perror("File server exec failed");
         exit(1);
+    } else { // parent
+        if (ipc == PIPE) {
+            close(file_pipe1[0]); // parent will write to file_pipe1[1]
+            close(file_pipe2[1]); // parent will read from file_pipe2[0]
+        }
     }
 
     delete[] file_args;
@@ -168,8 +217,15 @@ int main() {
     RequestChannel* file;
     if (ipc == FIFO) {
         // TODO: Create channels in parent using FIFOChannel
+        finance = new FIFOChannel("finance", RequestChannel::CLIENT_SIDE);
+        logging = new FIFOChannel("logging", RequestChannel::CLIENT_SIDE);
+        file = new FIFOChannel("files", RequestChannel::CLIENT_SIDE);
     } else {
         // TODO: Create channels in parent using PipeChannel
+        // Parent reads from *_pipe2[0] and writes to *_pipe1[1]
+        finance = new PipeChannel(finance_pipe2[0], finance_pipe1[1]);
+        logging = new PipeChannel(logging_pipe2[0], logging_pipe1[1]);
+        file = new PipeChannel(file_pipe2[0], file_pipe1[1]);
     }
 
     int current_user = -1;  // -1 means no user logged in
@@ -360,6 +416,9 @@ int main() {
     while(wait(NULL) > 0);
 
     // TODO: Clean up channels
+    delete finance;
+    delete file;
+    delete logging;
     
     return 0;
 }

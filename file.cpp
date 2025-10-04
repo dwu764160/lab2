@@ -30,8 +30,10 @@ int main(int argc, char* argv[]) {
     RequestChannel* channel;
     if (ipc == FIFO) {
         // TODO: Create the RequestChannel using FIFOChannel
+        channel = new FIFOChannel("files", RequestChannel::SERVER_SIDE);
     } else {
         // TODO: Create the RequestChannel using PipeChannel
+        channel = new PipeChannel(STDIN_FILENO, STDOUT_FILENO);
     }
 
     if (system("mkdir -p storage") != 0) {

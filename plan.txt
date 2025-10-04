@@ -1,0 +1,136 @@
+
+2
+
+Automatic Zoom
+Lab 2 Interprocess Communication 
+Due date 
+ Oct 6, 2025 11:59 PM CST
+ 
+Keywords.......................................................................................................................................2 
+Introduction................................................................................................................................... 2 
+Starter Code.................................................................................................................................. 2 
+Objectives......................................................................................................................................3 
+Differences from Lab 1.................................................................................................................. 3 
+Channel.h, channel.cpp............................................................................................................3 
+RequestChannel................................................................................................................. 3 
+PipeChannel....................................................................................................................... 4 
+FIFOChannel.......................................................................................................................4 
+Common utils........................................................................................................................... 5 
+Client and Servers.....................................................................................................................5 
+Pipes..............................................................................................................................................6 
+Tasks..............................................................................................................................................6 
+Implement RequestChannel (25 pts)......................................................................................... 6 
+Implement PipeChannel (25 pts)............................................................................................... 7 
+Implement FIFOChannel (25 pts)...............................................................................................7 
+Update Client to Use New Channels (15 pts).............................................................................7 
+Update Servers to Use New Channels (10 pts)..........................................................................7 
+Testing........................................................................................................................................... 7 
+Deliverables (Important).................................................................................................................8 
+Issues reporting............................................................................................................................. 8 
+ 
+1 
+Keywords 
+Interprocess communication, unnamed pipes, named pipes, file descriptors 
+Introduction 
+In this lab, you will modify the existing banking system to use Unix pipes and named pipes (FIFOs) 
+for  inter-process  communication.  The  previous  implementation  used  a  different  communication 
+mechanism  in  RequestChannel.  You  will  implement  both  standard  pipes  and  named  pipes  as 
+options for IPC between the client and server processes. 
+Starter Code  
+You are given a source directory with the following files: 
+●  RequestChannel, PipeChannel, and FIFOChannel classes (channel.h and channel.cpp): 
+channel.h  declares  these  three  classes,  which  you  will  implement  with  IPC  to 
+communicate between the server and client. RequestChannel is an abstract class, while 
+PipeChannel  and  FIFOChannel  are  concrete  classes  (can  be  instantiated).  You  must 
+implement  the  methods  for each class in channel.cpp. PipeChannel and FIFOChannel 
+inherit  from  RequestChannel.  As  their  names  suggest,  they  are  implemented  using 
+unnamed pipes and named pipes respectively. 
+●  Makefile (Makefile): This file compiles and builds the source files when you type the make 
+command  in  the  terminal.  You  can  use  ‘make’  to  compile,  ‘make  clean’  to  remove 
+executables,  and  ‘make  distclean’  to  remove  both  the  executables  and  files  the 
+executables generate. 
+●  Server  programs  (finance.cpp,  file.cpp,  logging.cpp)  :  These  files  have  the  same 
+functionality  as  in  lab  1.  However,  you  will  now  modify  them  to  use  the  new 
+RequestChannel. 
+●  Client  program  (client.cpp):  As  in  lab  1, the client will be responsible for creating new 
+server processes and communicating with them via the RequestChannel class as well as 
+printing  process  information,  which  you  will  implement. However, you will update it to 
+now support communication with the server through PipeChannel and FIFOChannel 
+●  Utilities (common.h): This file contains useful classes and functions shared between the 
+server and the client such as Request and Response definitions. An enum for different 
+types of requests (e.g., a login request) is also defined here. Do not modify these files. 
+●  The  storage directory will contain any files managed by the File Management program 
+(file.cpp). To start, it contains the following: 
+○  example_execution.txt: this is an example of the program running. Use this 
+as a reference for the expected behavior 
+2 
+○  example.log: this is an example of how the log file should look at the end of 
+example_execution. 
+Objectives 
+By the end of this lab, you should be familiar with: 
+●  Using unnamed pipes for process communication, including using pipe(), close() and dup2() 
+●  Using named pipes for process communication, including mkfifo() and open() 
+Getting Started 
+Go to the assignment’s GitHub classroom: https://classroom.github.com/a/oaO7q9KS  
+Read through the code. There have been changes made to all files, but the overall structure and 
+function are the same.  
+Differences from Lab 1 
+As every lab will build on the same project, there are not many changes from lab 1. The changes 
+that were made are listed below. 
+Channel.h, channel.cpp 
+This is the largest change from lab 1. You can now get an idea of how RequestChannel was 
+implemented, and implement it yourself.  
+RequestChannel 
+class RequestChannel { 
+protected: 
+    int rfd; 
+    int wfd; 
+    RequestChannel(); 
+ 
+public: 
+    enum Side {SERVER_SIDE, CLIENT_SIDE}; 
+     
+    virtual ~RequestChannel() {} 
+     
+    int cread(void* msgbuf, int msgsize); 
+    int cwrite(void* msgbuf, int msgsize); 
+ 
+    Response send_request(const Request& req); 
+    Request receive_request(); 
+3 
+    bool send_response(const Response& resp); 
+}; 
+RequestChannel is now an abstract base class; you cannot create an object of RequestChannel 
+since the constructor is protected. Instead, it simply declares two attributes (write and read fds) 
+and a few methods that you will need to define in channel.cpp.  
+cread() and cwrite() directly send/receive data through the file descriptors by calling read() and 
+write() syscalls. They should read/write a message msgbuf with size msgsize bytes into the 
+appropriate fd and return the number of bytes read/written. 
+It also declares send_request(), send_response(), and receive_request(), which should use cread() 
+and cwrite() instead of read() and write() directly. These three methods should be used the same 
+way as in lab 1. 
+●  If send_request fails, you should return a Response with s=false 
+●  If receive_request fails, you should return a Request with type FAILURE 
+●  If send_response fails, you should return false 
+Two channels inherit from RequestChannel: PipeChannel and FIFOChannel. These two channels 
+should be implemented with their respective IPC type: unnamed pipes and named pipes. 
+PipeChannel 
+class PipeChannel : public RequestChannel { 
+public: 
+    PipeChannel(int _rfd, int _wfd); 
+ 
+    ~PipeChannel(); 
+}; 
+The PipeChannel class doesn’t declare any new attributes or member functions. Because of the 
+nature of pipe, we cannot create the pipe within the PipeChannel object; the fds need to be part of 
+a pipe before the child is created. The constructor will take in these fds as arguments and handle 
+the closure of the pipe gracefully in the destructor. 
+FIFOChannel 
+class FIFOChannel : public RequestChannel { 
+private: 
+    std::string pipe1, pipe2; 
+ 
+    int open_pipe(std::string _pipe_name, int mode); 
+ 
+public: 
+4 
